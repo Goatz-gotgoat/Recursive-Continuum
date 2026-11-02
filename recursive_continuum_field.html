@@ -1,0 +1,649 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Recursive Continuum Field</title>
+<style>
+/* Layout: full-viewport 3D canvas; at every joint in the Recursive Continuum
+   chain, a 4-counter-rotating cluster of figure-eights — same treatment as
+   the Particle Lemniscates, applied node by node and aligned on the two chains. */
+:root {
+  --bg: #050611;
+  --bg-grad-top: #0c0e22;
+  --bg-grad-bot: #02030a;
+  --fg: #eef0ff;
+  --fg-dim: #9099bb;
+  --rule: rgba(238, 240, 255, 0.14);
+  --gold: #f2c14e;
+  color-scheme: dark;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% 20%, var(--bg-grad-top) 0%, var(--bg-grad-bot) 72%),
+    var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#stage { position: fixed; inset: 0; z-index: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+#overlay {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  left: max(20px, calc(env(safe-area-inset-left, 0px) + 20px));
+  z-index: 2;
+  pointer-events: none;
+  max-width: 320px;
+}
+#overlay .mark {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+#overlay h1 {
+  margin: 0 0 10px;
+  font-family: 'Fraunces', 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+#overlay p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+}
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10.5px;
+  color: var(--fg);
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+.legend .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.legend .ring {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 1.5px solid;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  background: transparent;
+}
+.legend .particles {
+  width: 16px;
+  height: 8px;
+  position: relative;
+  flex-shrink: 0;
+}
+#legend-box {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  right: max(20px, calc(env(safe-area-inset-right, 0px) + 20px));
+  z-index: 2;
+  pointer-events: none;
+  max-width: 240px;
+}
+#legend-box .legend-title {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin-bottom: 10px;
+}
+.legend .particles::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 1.5px;
+  height: 1.5px;
+  background: #ffa533;
+  box-shadow:
+     3px  2px 0 #ffa533,
+     7px  0px 0 #ffa533,
+     5px  5px 0 #ffa533,
+     9px  3px 0 #ffa533,
+    12px  1px 0 #ffa533,
+    14px  4px 0 #ffa533,
+    11px  6px 0 #ffa533,
+     2px  5px 0 #ffa533;
+}
+#hint {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  padding: 6px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: rgba(5, 6, 17, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  #overlay h1 { font-size: 20px; }
+  #overlay { max-width: 240px; }
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&family=STIX+Two+Text:wght@400&display=swap">
+
+<div id="stage"></div>
+<div id="overlay">
+  <div class="mark">Distinction · Without · Separation</div>
+  <h1>Recursive Continuum Field</h1>
+  <p>Two chains run through this field. The horizontal passes through two people and their outer phenomenological selves; the vertical from the cosmological to the atomic. The two people, the cosmological and the atomic interact at the centre to generate reality. The recursion is held simultaneously throughout the continuum.</p>
+</div>
+<div id="legend-box">
+  <div class="legend-title">Legend</div>
+  <ul class="legend">
+    <li><span class="dot" style="background:#7fd4ff"></span>Phenomenological B</li>
+    <li><span class="dot" style="background:#a6c3ff"></span>Person B</li>
+    <li><span class="dot" style="background:#ffb6a6"></span>Person A</li>
+    <li><span class="dot" style="background:#ff8787"></span>Phenomenological A</li>
+    <li><span class="dot" style="background:#ffe4a8"></span>Reality (centre)</li>
+    <li><span class="dot" style="background:#f2c14e"></span>Cosmological</li>
+    <li><span class="dot" style="background:#ffd98a"></span>Atomic</li>
+    <li><span class="particles"></span>Universal consciousness</li>
+  </ul>
+</div>
+<div id="hint">Drag · Scroll · Pinch</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 1, 8000);
+  const camState = { radius: 620, theta: 0.5, phi: 1.1 };
+  function updateCamera(){
+    const sp = Math.sin(camState.phi);
+    camera.position.set(
+      camState.radius * sp * Math.cos(camState.theta),
+      camState.radius * Math.cos(camState.phi),
+      camState.radius * sp * Math.sin(camState.theta)
+    );
+    camera.lookAt(0, 0, 0);
+  }
+  updateCamera();
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  stage.appendChild(renderer.domElement);
+
+  function resize(){
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function makeGlowTexture(){
+    const size = 64;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+    g.addColorStop(0.0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.55)');
+    g.addColorStop(0.6, 'rgba(255,255,255,0.15)');
+    g.addColorStop(1.0, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    const t = new THREE.CanvasTexture(c);
+    t.needsUpdate = true;
+    return t;
+  }
+  const glowTex = makeGlowTexture();
+
+  // --- geometry ---
+  const L = 52;          // lobe half-length per cluster
+  const TUBE_R = 3.2;    // tube thickness
+  const PER_FIG = 6750;  // particles per figure-eight (25% reduction)
+  const CLUSTER_SPACING = 2 * L;  // adjacent clusters touch at lobe tips
+
+  // --- 6 cluster centres: 4 along horizontal chain + 2 along vertical ---
+  const clusters = [
+    // horizontal chain in XZ plane
+    { cx: -3 * L, cy: 0,       cz: 0, phase: 0.00, color: 0x7fd4ff }, // outer phenomenological B
+    { cx: -1 * L, cy: 0,       cz: 0, phase: 1.37, color: 0xa6c3ff }, // person B
+    { cx: +1 * L, cy: 0,       cz: 0, phase: 2.74, color: 0xffb6a6 }, // person A
+    { cx: +3 * L, cy: 0,       cz: 0, phase: 4.11, color: 0xff8787 }, // outer phenomenological A
+    // vertical chain in YZ plane
+    { cx:  0,     cy: -1 * L,  cz: 0, phase: 0.63, color: 0xf2c14e }, // cosmos arm
+    { cx:  0,     cy: +1 * L,  cz: 0, phase: 3.47, color: 0xffd98a }, // matter arm
+  ];
+
+  // --- 4 base orientations per cluster (same four axes as the Particle Tori) ---
+  const q0 = new THREE.Quaternion();
+  const q1 = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
+  const q2 = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 4, 0, 0));
+  const q3 = new THREE.Quaternion()
+    .copy(q1)
+    .premultiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, Math.PI / 4)));
+  const baseQuats = [q0, q1, q2, q3];
+
+  // mirror pairs: blue↔green, red↔purple → counter-rotating tumbles
+  const flipDirs = [+1, -1, -1, +1];
+  const flipSpeed = 0.02484;
+
+  const colors = [
+    new THREE.Color(0xbfe0ff), // blue
+    new THREE.Color(0xff7a85), // red
+    new THREE.Color(0x8affaa), // green
+    new THREE.Color(0xdca0ff), // purple
+  ];
+
+  // --- build 6 × 4 = 24 figure-eight systems ---
+  const figs = [];
+  const flipAngles = [];
+  for (let c = 0; c < clusters.length; c++) {
+    for (let f = 0; f < 4; f++) {
+      flipAngles.push(clusters[c].phase + f * 0.41);
+
+      const tArr = new Float32Array(PER_FIG);
+      const vArr = new Float32Array(PER_FIG);
+      const tSpeed = new Float32Array(PER_FIG);
+      const tr = new Float32Array(PER_FIG);
+      for (let i = 0; i < PER_FIG; i++) {
+        tArr[i]   = Math.random() * Math.PI * 2;
+        vArr[i]   = Math.random() * Math.PI * 2;
+        tSpeed[i] = 0.008 + Math.random() * 0.008;
+        tr[i]     = 0.4 + Math.random() * 0.9;
+      }
+      const positions = new Float32Array(PER_FIG * 3);
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.PointsMaterial({
+        size: 2.4,
+        map: glowTex,
+        color: clusters[c].color,
+        transparent: true,
+        opacity: 0.95,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+      });
+      scene.add(new THREE.Points(geom, mat));
+
+      // middle horizontal nodes counter-rotate against the outer pair
+      const middleHoriz = (c === 1 || c === 2);
+      // yellow vertical nodes stand upright
+      const isVertical = (c === 4 || c === 5);
+      // yellow matter arm counter-rotates against cosmos
+      const yellowCounter = (c === 5);
+      // within each node: 4 figures share two orientations (f % 2 picks which)
+      const baseIdx = f % 2;
+      const baseQ = isVertical
+        ? (baseIdx === 0 ? new THREE.Quaternion()
+                         : new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)))
+        : baseQuats[baseIdx];
+      // golden-ratio speeds with alternating signs — irrational ratios never
+      // resolve, so the four figure-eights at each node drift forever
+      const phi = (1 + Math.sqrt(5)) / 2;
+      const goldenRates = [
+        1,
+        -1 / phi,
+        1 / phi ** 2,
+        -1 / phi ** 3
+      ];
+      const signMod = (middleHoriz ? -1 : +1) * (yellowCounter ? -1 : +1);
+      const signedRate = goldenRates[f] * signMod;
+      // fig 3 flips around a cross-axis so one figure-eight precesses perpendicular
+      // to the other three — breaks the planar symmetry of the swept volume
+      const defaultAxis = isVertical ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+      const crossAxis   = isVertical ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      const flipAxis = (f === 3) ? crossAxis : defaultAxis;
+      figs.push({
+        cluster: clusters[c],
+        baseQ,
+        signedRate,
+        flipAxis,
+        flipIdx: figs.length,
+        isVertical,
+        tArr, vArr, tSpeed, tr, positions, geom,
+      });
+    }
+  }
+
+  // --- shrink-wrap envelope at each node: the surface the two counter-rotating
+  //     figure-8s sweep as they tumble around their shared X axis. The envelope
+  //     is the revolved figure-8 outline y(x) = |x|·√(1 − (x/L)²), expanded
+  //     outward by the tube thickness. It pinches at x = 0 and both tips. ---
+  const HG_PARTICLES = 12000;  // kept at previous density; figure-eights were reduced independently
+  for (let c = 0; c < clusters.length; c++) {
+    const cluster = clusters[c];
+    const positions = new Float32Array(HG_PARTICLES * 3);
+    const isVertical = (c === 4 || c === 5);
+    for (let i = 0; i < HG_PARTICLES; i++) {
+      const u = Math.random() * 2 - 1;              // -1 to 1 along the node's axis
+      const axial = u * L;
+      const envR = Math.abs(axial) * Math.sqrt(Math.max(0, 1 - u * u)) + TUBE_R * 1.05;
+      const v = Math.random() * Math.PI * 2;
+      const r = envR + (Math.random() - 0.5) * 2.5;
+      const o = i * 3;
+      if (isVertical) {
+        positions[o]     = r * Math.cos(v) + cluster.cx;
+        positions[o + 1] = axial + cluster.cy;
+        positions[o + 2] = r * Math.sin(v) + cluster.cz;
+      } else {
+        positions[o]     = axial + cluster.cx;
+        positions[o + 1] = r * Math.cos(v) + cluster.cy;
+        positions[o + 2] = r * Math.sin(v) + cluster.cz;
+      }
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const mat = new THREE.PointsMaterial({
+      size: 2.1,
+      map: glowTex,
+      color: cluster.color,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    scene.add(new THREE.Points(geom, mat));
+  }
+
+  // --- Reality: a glowing orb at the centre where the four horizontal nodes meet ---
+  {
+    const reaRad = L * 0.42;
+    const reaN = 4500;
+    const reaPos = new Float32Array(reaN * 3);
+    for (let i = 0; i < reaN; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random() * 2 - 1);
+      // bias toward the centre so the orb reads as a glowing core
+      const r = reaRad * Math.pow(Math.random(), 2);
+      const sp = Math.sin(phi);
+      reaPos[i*3]   = r * sp * Math.cos(theta);
+      reaPos[i*3+1] = r * Math.cos(phi);
+      reaPos[i*3+2] = r * sp * Math.sin(theta);
+    }
+    const reaGeom = new THREE.BufferGeometry();
+    reaGeom.setAttribute('position', new THREE.BufferAttribute(reaPos, 3));
+    const reaMat = new THREE.PointsMaterial({
+      size: 2.6,
+      map: glowTex,
+      color: 0xffe4a8,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    scene.add(new THREE.Points(reaGeom, reaMat));
+  }
+
+  // --- Easter egg: the balance equation inscribed at Reality, as a 3D sprite
+  //     so it scales with zoom. At default view it's a faint shimmer;
+  //     zoom in close and it becomes legible. ---
+  {
+    const eqCanvas = document.createElement('canvas');
+    eqCanvas.width = 1024;
+    eqCanvas.height = 128;
+    const ectx = eqCanvas.getContext('2d');
+    const fontFamily = '"STIX Two Text", "Cambria Math", "Times New Roman", serif';
+    const bigSize = 60, smallSize = 36;
+    const pieces = [
+      {t: 'Φ', s: bigSize, dy: 0},
+      {t: 'A', s: smallSize, dy: 12},
+      {t: ' + ', s: bigSize, dy: 0},
+      {t: 'Φ', s: bigSize, dy: 0},
+      {t: 'B', s: smallSize, dy: 12},
+      {t: ' + ', s: bigSize, dy: 0},
+      {t: 'Φ', s: bigSize, dy: 0},
+      {t: 'C', s: smallSize, dy: 12},
+      {t: ' + ', s: bigSize, dy: 0},
+      {t: 'Φ', s: bigSize, dy: 0},
+      {t: 'M', s: smallSize, dy: 12},
+      {t: ' = 0', s: bigSize, dy: 0},
+    ];
+    function drawEquation(){
+      ectx.clearRect(0, 0, eqCanvas.width, eqCanvas.height);
+      ectx.fillStyle = '#ffe4a8';
+      ectx.textBaseline = 'alphabetic';
+      let totalW = 0;
+      for (const p of pieces) {
+        ectx.font = 'italic ' + p.s + 'px ' + fontFamily;
+        totalW += ectx.measureText(p.t).width;
+      }
+      let x = (eqCanvas.width - totalW) / 2;
+      const y = eqCanvas.height / 2 + bigSize * 0.3;
+      ectx.textAlign = 'left';
+      for (const p of pieces) {
+        ectx.font = 'italic ' + p.s + 'px ' + fontFamily;
+        ectx.fillText(p.t, x, y + p.dy);
+        x += ectx.measureText(p.t).width;
+      }
+    }
+    drawEquation();
+    const eqTex = new THREE.CanvasTexture(eqCanvas);
+    eqTex.needsUpdate = true;
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function(){ drawEquation(); eqTex.needsUpdate = true; });
+    }
+    const eqMat = new THREE.SpriteMaterial({
+      map: eqTex,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const eqSprite = new THREE.Sprite(eqMat);
+    eqSprite.scale.set(36, 4.5, 1);
+    scene.add(eqSprite);
+  }
+
+  // --- soft gold ring (equatorial band) enclosing the whole field ---
+  {
+    const haloGeom = new THREE.BufferGeometry();
+    const haloN = 2400;
+    const haloPos = new Float32Array(haloN * 3);
+    const haloRad = 3 * L;  // pass through the nexus (waist) of the outermost rings
+    for (let i = 0; i < haloN; i++) {
+      const a = (i / haloN) * Math.PI * 2 + Math.random() * 0.02;
+      const r = haloRad + (Math.random() - 0.5) * 5;
+      haloPos[i*3]   = Math.cos(a) * r;
+      haloPos[i*3+1] = (Math.random() - 0.5) * 3;
+      haloPos[i*3+2] = Math.sin(a) * r;
+    }
+    haloGeom.setAttribute('position', new THREE.BufferAttribute(haloPos, 3));
+    const haloMat = new THREE.PointsMaterial({
+      size: 2.0,
+      map: glowTex,
+      color: 0xf2c14e,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    scene.add(new THREE.Points(haloGeom, haloMat));
+  }
+
+  // --- faint golden orb (3D sphere) around the whole figure — the continuum ---
+  {
+    const orbGeom = new THREE.BufferGeometry();
+    const orbN = 10000;
+    const orbPos = new Float32Array(orbN * 3);
+    const orbRad = 3 * L;
+    for (let i = 0; i < orbN; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random() * 2 - 1);  // uniform on the sphere
+      const r = orbRad + (Math.random() - 0.5) * 6;
+      const sp = Math.sin(phi);
+      orbPos[i*3]   = r * sp * Math.cos(theta);
+      orbPos[i*3+1] = r * Math.cos(phi);
+      orbPos[i*3+2] = r * sp * Math.sin(theta);
+    }
+    orbGeom.setAttribute('position', new THREE.BufferAttribute(orbPos, 3));
+    const orbMat = new THREE.PointsMaterial({
+      size: 1.6,
+      map: glowTex,
+      color: 0xf2c14e,
+      transparent: true,
+      opacity: 0.26,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    scene.add(new THREE.Points(orbGeom, orbMat));
+  }
+
+  const _v = new THREE.Vector3();
+  const _flipQ = new THREE.Quaternion();
+  const _flipAxisX = new THREE.Vector3(1, 0, 0);
+  const _flipAxisY = new THREE.Vector3(0, 1, 0);
+  const _finalQ = new THREE.Quaternion();
+
+  function animate(){
+    for (let fi = 0; fi < figs.length; fi++) {
+      const f = figs[fi];
+      flipAngles[f.flipIdx] += f.signedRate * flipSpeed;
+      _flipQ.setFromAxisAngle(f.flipAxis, flipAngles[f.flipIdx]);
+      _finalQ.copy(f.baseQ).multiply(_flipQ);
+
+      const pos = f.positions;
+      const cx = f.cluster.cx, cy = f.cluster.cy, cz = f.cluster.cz;
+      const tArr = f.tArr, vArr = f.vArr, tSp = f.tSpeed, tr = f.tr;
+
+      for (let k = 0; k < PER_FIG; k++) {
+        tArr[k] += tSp[k];
+        vArr[k] += 0.012;
+        const tt = tArr[k];
+        const ct = Math.cos(tt), st = Math.sin(tt);
+        const c2t = Math.cos(2 * tt);
+
+        // Horizontal lemniscate by default; vertical for the two yellow nodes.
+        let lpx, lpy, tgx, tgy;
+        if (f.isVertical) {
+          lpx = (L / 2) * (2 * st * ct);
+          lpy = L * ct;
+          tgx = c2t; tgy = -st;
+        } else {
+          lpx = L * ct;
+          lpy = (L / 2) * (2 * st * ct);
+          tgx = -st; tgy = c2t;
+        }
+        const tmag = Math.hypot(tgx, tgy) || 1e-6;
+        tgx /= tmag; tgy /= tmag;
+        const nx = -tgy, ny = tgx;
+
+        // tube offset: cos(v) around in-plane normal, sin(v) along local Z
+        const cv = Math.cos(vArr[k]), sv = Math.sin(vArr[k]);
+        const r = tr[k] * TUBE_R;
+        const ox = r * cv * nx;
+        const oy = r * cv * ny;
+        const oz = r * sv;
+
+        _v.set(lpx + ox, lpy + oy, oz);
+        _v.applyQuaternion(_finalQ);
+
+        const o = k * 3;
+        pos[o]     = _v.x + cx;
+        pos[o + 1] = _v.y + cy;
+        pos[o + 2] = _v.z + cz;
+      }
+      f.geom.attributes.position.needsUpdate = true;
+    }
+
+    // slow auto-rotation at golden-ratio counter-rhythm: scene at full speed,
+    // camera at 1/φ (0.618×) in the opposite direction — never resolves
+    scene.rotation.y += 0.0012;
+    camState.theta  -= 0.0012 * 0.618;
+    updateCamera();
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+
+  // --- pointer controls ---
+  const el = renderer.domElement;
+  el.style.touchAction = 'none';
+  const pointers = new Map();
+  let lastPinch = 0;
+
+  el.addEventListener('pointerdown', function(e){
+    el.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  });
+  el.addEventListener('pointermove', function(e){
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId);
+    const dx = e.clientX - prev.x;
+    const dy = e.clientY - prev.y;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) {
+      camState.theta -= dx * 0.006;
+      camState.phi   -= dy * 0.006;
+      const eps = 0.05;
+      camState.phi = Math.max(eps, Math.min(Math.PI - eps, camState.phi));
+      updateCamera();
+    } else if (pointers.size === 2) {
+      const pts = Array.from(pointers.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (lastPinch > 0) {
+        camState.radius *= lastPinch / dist;
+        camState.radius = Math.max(150, Math.min(2000, camState.radius));
+        updateCamera();
+      }
+      lastPinch = dist;
+    }
+  });
+  function upHandler(e){
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) lastPinch = 0;
+  }
+  el.addEventListener('pointerup', upHandler);
+  el.addEventListener('pointercancel', upHandler);
+  el.addEventListener('pointerleave', upHandler);
+
+  el.addEventListener('wheel', function(e){
+    e.preventDefault();
+    camState.radius *= Math.exp(e.deltaY * 0.0012);
+    camState.radius = Math.max(150, Math.min(2000, camState.radius));
+    updateCamera();
+  }, { passive: false });
+
+  animate();
+})();
+</script>
